@@ -1,8 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+
+using VoteBot.Source;
 
 namespace VoteBot
 {
@@ -38,33 +40,20 @@ namespace VoteBot
 
         private async Task HandleReactionAddAsync(Cacheable<IUserMessage, ulong> message, ISocketMessageChannel channel, SocketReaction reaction)
         {
-            try { 
-            var msg = await channel.GetMessageAsync(message.Id);
-
-            if (!msg.ToString().Contains("#vote"))
-                return;
-
-            var user = (await channel.GetUserAsync(reaction.UserId)) as SocketGuildUser;
-            if (user.GuildPermissions.Administrator || user.Id == msg.Author.Id)
-                return;
-
-            foreach (var msg_reaction in msg.Reactions)
+            try
             {
-                var usersReacted = (await msg?.GetReactionUsersAsync(msg_reaction.Key, 1000).FlattenAsync()) as ICollection<IUser>;
-                foreach (var user_reaction in usersReacted)
+                IMessage msg = await channel.GetMessageAsync(message.Id);
+                Task<IUser> userTask = channel.GetUserAsync(reaction.UserId);
+                foreach (var voteType in Dictionaries.VoteType__ADD_Reactions.Where(voteType => msg.ToString().Contains(voteType.Key)))
                 {
+                    SocketGuildUser user = (await userTask) as SocketGuildUser;
+                    if (user.GuildPermissions.Administrator || user.Id == msg.Author.Id)
+                        return;
 
-                    if (msg_reaction.Key.Name == reaction.Emote.Name && usersReacted.Count > 1 && !user_reaction.IsBot)
-                        break;
-
-                    if (user_reaction.Id == reaction.UserId)
-                        await msg.RemoveReactionAsync(msg_reaction.Key, reaction.UserId);
+                    await voteType.Value.Invoke(msg, channel, reaction);
                 }
             }
-            }
             catch { throw; }
-
-            return;
         }
     }
 }
