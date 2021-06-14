@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 
 namespace VoteBot.Config
 {
@@ -16,13 +15,14 @@ namespace VoteBot.Config
         public static Config Get()
         {
             Config cfg;
-            if (!File.Exists(ConfigFileName))
+            string path = @$"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\{ConfigFileName}";
+            if (!File.Exists(path))
             {
                 cfg = new()
                 {
-                    Token = "ENTER ME PLEASE"
+                    Token = ""
                 };
-                File.WriteAllText(ConfigFileName, JsonConvert.SerializeObject(cfg, Formatting.Indented));
+                File.WriteAllText(path, JsonConvert.SerializeObject(cfg, Formatting.Indented));
             }
             else
             {
